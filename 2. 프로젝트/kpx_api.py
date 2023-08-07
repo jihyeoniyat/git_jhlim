@@ -25,6 +25,9 @@ def main(
 
     ## 2. 일 발전량 조회 GET
     data = get_data(session, aliases, fromDate)
+
+    if data is None:
+        return
     
     ## 3. dataframe으로 변경
     df = make_dataframe(data)
