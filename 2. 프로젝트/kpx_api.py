@@ -75,6 +75,11 @@ def get_data(session, aliases, fromDate):
         ## JSON 파싱 -> list
         json_data = response.json()
 
+        # json_data가 비어 있는 경우
+        if not json_data:  
+            print("데이터가 없습니다. 작업을 건너뜁니다.")
+            return None
+
         ## 인덴트를 사용하여 JSON 데이터 출력 -> str
         #jd = json.dumps(json_data, indent=4, ensure_ascii=False)
         #print(jd, type(jd))  
