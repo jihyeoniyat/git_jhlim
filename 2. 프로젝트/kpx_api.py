@@ -32,7 +32,7 @@ def main(
     ## 3. dataframe으로 변경
     df = make_dataframe(data)
 
-    #  csv 저장 -> blob에 저장
+    #  4. csv 저장 -> blob에 저장
     azure_key = key
     load_csv(azure_key,df,aliases,fromDate)
 
@@ -82,7 +82,7 @@ def get_data(session, aliases, fromDate):
         if not json_data:  
             print("데이터가 없습니다. 작업을 건너뜁니다.")
             return None
-
+        
         ## 인덴트를 사용하여 JSON 데이터 출력 -> str
         #jd = json.dumps(json_data, indent=4, ensure_ascii=False)
         #print(jd, type(jd))  
@@ -151,23 +151,22 @@ def load_csv(azure_key, df, aliases, fromDate):
 
 if __name__ == "__main__":
 
-    ### 로컬 환경 ver
-    # parser = argparse.ArgumentParser()
-    # parser.add_argument("--site", type=str)
-    # parser.add_argument("--key", type=str)
-    # args = parser.parse_args()
+    ## 로컬 환경 ver
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--site", type=str)
+    parser.add_argument("--key", type=str)
+    args = parser.parse_args()
 
-    # main(**vars(args))
+    main(**vars(args))
 
-    ### Databricks 노트북 환경 ver
-    # Databricks 노트북 환경에서 변수 입력
-    dbutils.widgets.text("site", "")
-    dbutils.widgets.text("key", "")
+    # ### Databricks 노트북 환경 ver
+    # # Databricks 노트북 환경에서 변수 입력
+    # dbutils.widgets.text("site", "")
+    # dbutils.widgets.text("key", "")
 
-    # 변수 값을 가져옴
-    site = dbutils.widgets.get("site")
-    key = dbutils.widgets.get("key")
+    # # 변수 값을 가져옴
+    # site = dbutils.widgets.get("site")
+    # key = dbutils.widgets.get("key")
 
-    # main 함수 호출
-    main(site, key)
-
+    # # main 함수 호출
+    # main(site, key)
