@@ -6,6 +6,7 @@ from pytz import timezone
 from azure.storage.blob import BlobServiceClient
 from datetime import datetime, timedelta
 import argparse
+import os
 
 
 def main(
@@ -135,13 +136,30 @@ def load_csv(azure_key, df, aliases, fromDate):
     with open(file_name, "rb") as data:
         blob_client.upload_blob(data, overwrite=True)
 
+    os.remove(file_name)
+
     print("CSV 파일이 Azure Blob Storage에 업로드되었습니다.")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--site", type=str)
-    parser.add_argument("--key", type=str)
-    args = parser.parse_args()
 
-    main(**vars(args))
+    ### 로컬 환경 ver
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument("--site", type=str)
+    # parser.add_argument("--key", type=str)
+    # args = parser.parse_args()
+
+    # main(**vars(args))
+
+    ### Databricks 노트북 환경 ver
+    # Databricks 노트북 환경에서 변수 입력
+    dbutils.widgets.text("site", "")
+    dbutils.widgets.text("key", "")
+
+    # 변수 값을 가져옴
+    site = dbutils.widgets.get("site")
+    key = dbutils.widgets.get("key")
+
+    # main 함수 호출
+    main(site, key)
+
