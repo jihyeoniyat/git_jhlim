@@ -11,11 +11,8 @@ from datetime import datetime, timedelta
 ## 라인 리스트
 ## 추가 라인이 적용될 경우 하기 리스트에 라인 명을 추가해줘야함
 ## 라인명은 반드시 Blob의 라인 폴더 명과 일치해야함
-
-#line_list = ['ABH125c_1', 'ABH250c_1', 'ABH125c_2', 'ABH250c_2']
-
-## 신규 확장 라인 400/800 2개 추가 (라인명 확인 필요)
-line_list = ['ABH125c_1', 'ABH250c_1', 'ABH125c_2', 'ABH250c_2','ABS400c']
+line_list = ['ABH125c_1', 'ABH250c_1', 'ABH125c_2', 'ABH250c_2', 'ABS400c_1',  'ABS800c_1']
+#line_list = ['ABH125c_1', 'ABH125c_2']
 
 ## D-1 날짜
 ## D-1 데이터를 배치로 가져오기 때문에 var1 는 일반적으로 1

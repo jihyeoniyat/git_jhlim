@@ -26,13 +26,37 @@ azure_engine = sqlalchemy.create_engine('mssql+pymssql://' + az_user + ':' + az_
 ## 라인 리스트
 ## 추가 라인이 적용될 경우 하기 리스트에 라인 명을 추가해줘야함
 ## 라인명은 반드시 Blob의 라인 폴더 명과 일치해야함
-## #2라인 2개 추가
-line_list = ['ABH125c_1', 'ABH250c_1', 'ABH125c_2', 'ABH250c_2']
-#line_list = ['ABH125c_1']
+
+line_list = ['ABH125c_1', 'ABH250c_1', 'ABH125c_2', 'ABH250c_2', 'ABS400c_1', 'ABS800c_1']
+
+#line_list = ['ABS800c_1']
+
 
 ## 사이드 리스트
 ## 라인명은 반드시 Blob의 사이드 폴더 명과 일치해야함
+
+## 기존 라인
 side_list = ['RIGHT', 'LOAD', 'LOAD_TAP', 'TOP', 'LINE_TAP', 'LINE', 'LEFT' ]
+
+## 23년 3월 라인 추가 - ABS400c_1 / 사이드 18개
+side_list_400 = ['RIGHT_1','RIGHT_2',
+               'LOAD', 'LINE',
+               'LOAD_TAP_N', 'LOAD_TAP_R','LOAD_TAP_S','LOAD_TAP_T',
+               'LINE_TAP_N','LINE_TAP_R','LINE_TAP_S','LINE_TAP_T',
+               'TOP_1', 'TOP_2', 
+                'LEFT_1','LEFT_2',
+                'BOTTOM_1','BOTTOM_2']
+
+## 23년 4월 라인 추가 - ABS800c_1 / 사이드 20개
+side_list_800 = ['RIGHT_1','RIGHT_2',
+               'LOAD_1', 'LOAD_2',
+               'LINE_1', 'LINE_2'
+               'LOAD_TAP_1', 'LOAD_TAP_2',
+               'LINE_TAP_1','LINE_TAP_2',
+               'TOP_1', 'TOP_2', 'TOP_3', 'TOP_4', 
+               'LEFT_1','LEFT_2',
+               'BOTTOM_1','BOTTOM_2','BOTTOM_3','BOTTOM_4']
+
 
 ## D-1 날짜
 ## D-1 데이터를 배치로 가져오기 때문에 vat1 는 일반적으로 1
@@ -47,10 +71,50 @@ check_mon = check_dt[:-2]
 # ======================================================================================================================
 ## NG_XML 폴더에 있는 불량 바운딩 이미지(.jpg) 파일 리스트를 추출
 
+## 기존 라인
 def allblobs(line, side_list, check_dt, check_mon):
     fpath_list = []
 
     for side in side_list:
+
+        PREFIX = line + '/NG_XML' + '/' + check_mon + '/' + side + '/' + check_dt
+
+        try :
+            blob_list = block_blob_service.list_blobs(CONTAINERNAME, prefix=PREFIX)
+        except :
+            continue
+        else :
+            for blob in blob_list:
+                fpath_list.append(blob.name)
+
+    return fpath_list
+
+
+
+## 'ABS400_1' 라인 
+def allblobs_400(line, side_list_400, check_dt, check_mon):
+    fpath_list = []
+
+    for side in side_list_400:
+
+        PREFIX = line + '/NG_XML' + '/' + check_mon + '/' + side + '/' + check_dt
+
+        try :
+            blob_list = block_blob_service.list_blobs(CONTAINERNAME, prefix=PREFIX)
+        except :
+            continue
+        else :
+            for blob in blob_list:
+                fpath_list.append(blob.name)
+
+    return fpath_list
+
+
+## 'ABS800_1' 라인 
+def allblobs_800(line, side_list_800, check_dt, check_mon):
+    fpath_list = []
+
+    for side in side_list_800:
 
         PREFIX = line + '/NG_XML' + '/' + check_mon + '/' + side + '/' + check_dt
 
@@ -112,29 +176,79 @@ result = pd.DataFrame()
 ## 각 라인 별로 수행
 for line in line_list:
     print('\n>> '+ check_dt +' '+ line + ' : 시작')
-    try:
-        fpath_list = allblobs(line, side_list, check_dt, check_mon)
-        if fpath_list:
-            result = set_structure(line, fpath_list)
+    
+    if (line == 'ABS400c_1') : 
+        try:
+            fpath_list = allblobs_400(line, side_list_400, check_dt, check_mon)
+            if fpath_list:
+                result = set_structure(line, fpath_list)
 
-            ## MS SQL 테이블의 필드 순서와 일치시켜주는 작업
-            result = result.loc[:, ['LINE', 'DD', 'HHMISS', 'SRAL_ID', 'POS', 'DEFT_TYP', 'X1CODI', 'Y1CODI', 'X2CODI', 'Y2CODI', 'URL']]
+                ## MS SQL 테이블의 필드 순서와 일치시켜주는 작업
+                result = result.loc[:, ['LINE', 'DD', 'HHMISS', 'SRAL_ID', 'POS', 'DEFT_TYP', 'X1CODI', 'Y1CODI', 'X2CODI', 'Y2CODI', 'URL']]
 
-            ## MS SQL 테이블의 데이터 타입과 일치시켜주는 작업
-            result['DD'] = result['DD'].map(lambda x: pd.to_datetime(x, format='%Y-%m-%d'))
-            result['HHMISS'] = result['HHMISS'].map(lambda x: ':'.join([x[0:2], x[2:4], x[4:]]))
-            result['X1CODI'] = result['X1CODI'].astype(int)
-            result['Y1CODI'] = result['Y1CODI'].astype(int)
-            result['X2CODI'] = result['X2CODI'].astype(int)
-            result['Y2CODI'] = result['Y2CODI'].astype(int)
+                ## MS SQL 테이블의 데이터 타입과 일치시켜주는 작업
+                result['DD'] = result['DD'].map(lambda x: pd.to_datetime(x, format='%Y-%m-%d'))
+                result['HHMISS'] = result['HHMISS'].map(lambda x: ':'.join([x[0:2], x[2:4], x[4:]]))
+                result['X1CODI'] = result['X1CODI'].astype(int)
+                result['Y1CODI'] = result['Y1CODI'].astype(int)
+                result['X2CODI'] = result['X2CODI'].astype(int)
+                result['Y2CODI'] = result['Y2CODI'].astype(int)
 
-            ## MS SQL 테이블에 Append
-            result.to_sql(con=azure_engine, name='NG_IMG_BPATH', index=False, if_exists='append')
-            print(line + ' MS SQL 테이블에 Append 완료')
+                ## MS SQL 테이블에 Append
+                result.to_sql(con=azure_engine, name='NG_IMG_BPATH', index=False, if_exists='append')
+                print(line + ' MS SQL 테이블에 Append 완료')
+    
+        except Exception as e:
+            print(line+' exception : '+str(e))
+            continue  
 
-    except Exception as e:
-        print(line+' exception : '+str(e))
-        continue
+    elif (line == 'ABS800c_1'):
+        try:
+            fpath_list = allblobs_800(line, side_list_800, check_dt, check_mon)
+            if fpath_list:
+                result = set_structure(line, fpath_list)
 
+                ## MS SQL 테이블의 필드 순서와 일치시켜주는 작업
+                result = result.loc[:, ['LINE', 'DD', 'HHMISS', 'SRAL_ID', 'POS', 'DEFT_TYP', 'X1CODI', 'Y1CODI', 'X2CODI', 'Y2CODI', 'URL']]
 
+                ## MS SQL 테이블의 데이터 타입과 일치시켜주는 작업
+                result['DD'] = result['DD'].map(lambda x: pd.to_datetime(x, format='%Y-%m-%d'))
+                result['HHMISS'] = result['HHMISS'].map(lambda x: ':'.join([x[0:2], x[2:4], x[4:]]))
+                result['X1CODI'] = result['X1CODI'].astype(int)
+                result['Y1CODI'] = result['Y1CODI'].astype(int)
+                result['X2CODI'] = result['X2CODI'].astype(int)
+                result['Y2CODI'] = result['Y2CODI'].astype(int)
 
+                ## MS SQL 테이블에 Append
+                result.to_sql(con=azure_engine, name='NG_IMG_BPATH', index=False, if_exists='append')
+                print(line + ' MS SQL 테이블에 Append 완료')
+    
+        except Exception as e:
+            print(line+' exception : '+str(e))
+            continue       
+
+    else :
+        try:
+            fpath_list = allblobs(line, side_list, check_dt, check_mon)
+
+            if fpath_list:
+                result = set_structure(line, fpath_list)
+
+                ## MS SQL 테이블의 필드 순서와 일치시켜주는 작업
+                result = result.loc[:, ['LINE', 'DD', 'HHMISS', 'SRAL_ID', 'POS', 'DEFT_TYP', 'X1CODI', 'Y1CODI', 'X2CODI', 'Y2CODI', 'URL']]
+
+                ## MS SQL 테이블의 데이터 타입과 일치시켜주는 작업
+                result['DD'] = result['DD'].map(lambda x: pd.to_datetime(x, format='%Y-%m-%d'))
+                result['HHMISS'] = result['HHMISS'].map(lambda x: ':'.join([x[0:2], x[2:4], x[4:]]))
+                result['X1CODI'] = result['X1CODI'].astype(int)
+                result['Y1CODI'] = result['Y1CODI'].astype(int)
+                result['X2CODI'] = result['X2CODI'].astype(int)
+                result['Y2CODI'] = result['Y2CODI'].astype(int)
+
+                ## MS SQL 테이블에 Append
+                result.to_sql(con=azure_engine, name='NG_IMG_BPATH', index=False, if_exists='append')
+                print(line + ' MS SQL 테이블에 Append 완료')
+    
+        except Exception as e:
+            print(line+' exception : '+str(e))
+            continue     
