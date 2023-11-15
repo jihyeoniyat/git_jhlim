@@ -1,2 +1,0 @@
-id,time,alarmType,resolved,alarmStatusList,statusInfoList,siteId,siteName,deviceId,deviceName,deviceLocation,deviceModel,deviceModelName,displayDisable
-653b4fe796f2a7157a4e783b,2023-10-27T14:51:30+0900,StatusInfo,2023-10-27T14:51:30+0900,[],"[{'id': 'DIG_POFF_STTS', 'value': 'POWER_OFF Status 해제'}, {'id': 'DIG_PON_STTS', 'value': 'POWER_ON Status'}, {'id': 'DIG_POFF_STTS', 'value': 'POWER_OFF Status 해제'}, {'id': 'DIG_PON_STTS', 'value': 'POWER_ON Status'}]",YA,영암 발전소,YA.ESS01.PCS01,PCS#01,ESS01,PCS,LSEP-123,False
