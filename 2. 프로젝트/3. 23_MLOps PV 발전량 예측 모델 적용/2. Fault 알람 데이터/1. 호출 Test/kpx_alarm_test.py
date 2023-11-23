@@ -20,61 +20,6 @@ response_login.raise_for_status()  # 오류 발생 시 예외 처리
 ## api 데이터 호출
 api_url = 'https://essonm.ls-electric.com/api/alarms'
 
-## API 요청을 위한 데이터 - PV(PCU)
-# data = {
-#     'deviceIds': [
-#         "YA.PV01.PCU01",
-#         "YA.PV02.PCU01",
-#         "YA.PV03.PCU01",
-#         "YA.PV04.PCU01",
-#         "YA.PV05.PCU01",
-#         "YA.PV06.PCU01",
-#         "YA.PV07.PCU01",
-#         "YA.PV08.PCU01",
-#         "YA.PV09.PCU01",
-#         "YA.PV10.PCU01",
-#         "YA.PV11.PCU01",
-#         "YA.PV12.PCU01",
-#         "YA.PV13.PCU01",
-#         "YA.PV14.PCU01",
-#         "YA.PV15.PCU01",
-#         "YA.PV16.PCU01",
-#         "YA.PV17.PCU01",
-#         "YA.PV18.PCU01",
-#         "YA.PV19.PCU01",
-#         "YA.PV20.PCU01",
-#         "YA.PV21.PCU01",
-#         "YA.PV22.PCU01",
-#         "YA.PV23.PCU01",
-#         "YA.PV24.PCU01",
-#         "YA.PV25.PCU01",
-#         "YA.PV26.PCU01",
-#         "YA.PV27.PCU01",
-#         "YA.PV28.PCU01",
-#         "YA.PV29.PCU01",
-#         "YA.PV30.PCU01",
-#         "YA.PV31.PCU01",
-#         "YA.PV32.PCU01",
-#         "YA.PV33.PCU01",
-#         "YA.PV34.PCU01",
-#         "YA.PV35.PCU01",
-#         "YA.PV36.PCU01",
-#         "YA.PV37.PCU01",
-#         "YA.PV38.PCU01",
-#         "YA.PV39.PCU01",
-#         "YA.PV40.PCU01",
-#         "YA.PV41.PCU01",
-#         "YA.PV42.PCU01",
-#         "YA.PV43.PCU01",
-#         "YA.PV44.PCU01",  
-#         "YA.PV45.PCU01"
-#     ],
-#     'types': ['StatusInfo'],
-#     'unresolved': False,
-#     'startDate': '2023-03-23',
-#     'tagIds': ['DIG_UNIT1_FLT_STOP_STTS']
-# }
-
 # API 요청을 위한 데이터 - ESS(PCS)
 data = {
     'deviceIds': [
@@ -118,13 +63,14 @@ data = {
         "YA.ESS01.PCS38",
         "YA.ESS01.PCS39"
     ],
-    'types': ['Fault','StatusInfo'],
+    'types': ['Fault'],
     'unresolved': True,
-    'startDate': '2023-08-29',
-    'endDate' : '2023-09-07',
-    'tagIds': ['DIG_POFF_STTS','DIG_FLT_STTS']
+    #'startDate': '2023-08-29',
+    # 'endDate' : '2023-09-07',
+    'tagIds': ['DIG_FLT_STTS'],     #'DIG_POFF_STTS' -> type,unresolved 삭제
+    "pageNumber" : 1,
+    "countPerPage" : 1
 }
-
 
 # 요청 보내기
 response = session.post(api_url, json=data, headers={'Content-Type': 'application/json'})
@@ -139,41 +85,63 @@ except requests.exceptions.RequestException as err:
 
 # JSON 응답 문자열을 파이썬 객체로 변환
 result_data = response.json()
-print(result_data[0].get("alarmStatusList"))
 
 
-# "alarmMessageId"가 "DIG_FLT_STTS+0"인 딕셔너리만 필터링
-# filtered_list = [entry for entry in result_data 
-#                  if "alarmStatusList" in entry and any(status.get("alarmMessageId") == "DIG_FLT_STTS+0" for status in entry.get("alarmStatusList", []))]
-
+#"alarmMessageId"가 "DIG_FLT_STTS+0"인 딕셔너리만 필터링
+filtered_list = [entry for entry in result_data 
+                 if "alarmStatusList" in entry and any(status.get("alarmMessageId") == "DIG_FLT_STTS+0" for status in entry.get("alarmStatusList", []))]
+filtered_fault = []
+# "alarmMessageId": "DIG_FLT_STTS+0"가 포함된 딕셔너리만 남기기
+for entry in filtered_status:
+    if 'alarmStatusList' in entry:
+        entry['alarmStatusList'] = [status_dict for status_dict in entry['alarmStatusList'] if status_dict.get('alarmMessageId') == 'DIG_FLT_STTS+0']
+        filtered_fault.append(entry)
+        
 # "statusInfoList"가 "DIG_POFF_STTS"인 딕셔너리만 필터링
 # filtered_list = [entry for entry in result_data 
 #                  if "statusInfoList" in entry and any(status.get("id") == "DIG_POFF_STTS" for status in entry.get("statusInfoList", []))]
 
 
-# # 데이터프레임 생성
-# df = pd.json_normalize(filtered_list)
+# 데이터프레임 생성
+df = pd.json_normalize(filtered_list)
+
+# 'alarmStatusList'의 값들을 별도의 데이터프레임으로 만들기
+alarm_status_list= []
+for entry in result_data:
+    for alarm_status in entry.get('alarmStatusList', []):
+        entry_dict = {
+            'displayDisable': entry.get('displayDisable'),
+            'alarmStatusList_alarmMessageId': alarm_status.get('alarmMessageId'),
+            'alarmStatusList_status': alarm_status.get('status'), 
+            'alarmStatusList_occurred': alarm_status.get('occurred'),
+            'alarmStatusList_resolved': alarm_status.get('resolved')
+        }
+        alarm_status_list.append(entry_dict)
+
+alarm_status_df = pd.DataFrame(alarm_status_list)
 
 
-# # 'statusInfoList'의 값들을 별도의 데이터프레임으로 만들기
-# status_info_list = []
-# for entry in result_data:
-#     for status_info in entry.get('statusInfoList', []):
-#         entry_dict = {
-#             'displayDisable': entry.get('displayDisable'),
-#             'statusInfoList_id': status_info.get('id'),
-#             'statusInfoList_value': status_info.get('value')
-#         }
-#         status_info_list.append(entry_dict)
+# 'statusInfoList'의 값들을 별도의 데이터프레임으로 만들기
+status_info_list = []
+for entry in result_data:
+    for status_info in entry.get('statusInfoList', []):
+        entry_dict = {
+            'displayDisable': entry.get('displayDisable'),
+            'statusInfoList_id': status_info.get('id'),
+            'statusInfoList_value': status_info.get('value')
+        }
+        status_info_list.append(entry_dict)
 
-# status_info_df = pd.DataFrame(status_info_list)
-
-# # 'displayDisable' 컬럼을 기준으로 두 데이터프레임을 병합
-# merged_df = pd.merge(df, status_info_df, on='displayDisable', how='left')
-# merged_df = merged_df.drop("statusInfoList", axis=1)
+status_info_df = pd.DataFrame(status_info_list)
 
 
+# 'displayDisable' 컬럼을 기준으로 두 데이터프레임을 병합
+merged_df = pd.merge(df, alarm_status_df, on='displayDisable', how='left')
+merged_df = pd.merge(merged_df, status_info_df, on='displayDisable', how='left')
+merged_df = merged_df.drop("statusInfoList", axis=1)
+merged_df = merged_df.drop("alarmStatusList", axis=1)
 
-# merged_df.to_csv('/Users/jihyeon/Desktop/ESS_Test_resolved.csv', index=False)
 
-# df.to_json('/Users/jihyeon/Desktop/ESS_filter_Resolved.json', orient='records', lines=True)
+merged_df.to_csv('/Users/jihyeon/Desktop/ESS_FLT_filtered.csv', index=False)
+
+# df.to_json('/Users/jihyeon/Desktop/ESS_filter_Resolved.json', orient='records', lines=Tru
