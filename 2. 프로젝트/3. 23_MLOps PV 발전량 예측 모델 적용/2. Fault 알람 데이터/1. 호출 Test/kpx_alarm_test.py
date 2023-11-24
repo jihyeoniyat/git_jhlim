@@ -1,13 +1,13 @@
-import requests
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+#import requests
 from requests_toolbelt import MultipartEncoder
 import pandas as pd
 from pytz import timezone
-from azure.storage.blob import BlobServiceClient
-from datetime import datetime, timedelta
-import os
-import json
+#from azure.storage.blob import BlobServiceClient
 
-## Login 및 세션 생성
+
 session = requests.Session()
 
 url_login = 'https://essonm.ls-electric.com/api/login'
@@ -82,32 +82,34 @@ except requests.exceptions.HTTPError as errh:
 except requests.exceptions.RequestException as err:
     print(f'요청 오류: {err}')
 
-
 # JSON 응답 문자열을 파이썬 객체로 변환
 result_data = response.json()
 
 
-#"alarmMessageId"가 "DIG_FLT_STTS+0"인 딕셔너리만 필터링
-filtered_list = [entry for entry in result_data 
-                 if "alarmStatusList" in entry and any(status.get("alarmMessageId") == "DIG_FLT_STTS+0" for status in entry.get("alarmStatusList", []))]
-filtered_fault = []
 # "alarmMessageId": "DIG_FLT_STTS+0"가 포함된 딕셔너리만 남기기
-for entry in filtered_status:
+filtered_fault = []
+
+for entry in result_data:
     if 'alarmStatusList' in entry:
         entry['alarmStatusList'] = [status_dict for status_dict in entry['alarmStatusList'] if status_dict.get('alarmMessageId') == 'DIG_FLT_STTS+0']
         filtered_fault.append(entry)
-        
-# "statusInfoList"가 "DIG_POFF_STTS"인 딕셔너리만 필터링
+
+
+# #"alarmMessageId"가 "DIG_FLT_STTS+0"인 딕셔너리만 필터링
 # filtered_list = [entry for entry in result_data 
-#                  if "statusInfoList" in entry and any(status.get("id") == "DIG_POFF_STTS" for status in entry.get("statusInfoList", []))]
+#                  if "alarmStatusList" in entry and any(status.get("alarmMessageId") == "DIG_FLT_STTS+0" for status in entry.get("alarmStatusList", []))]
+        
+# # "statusInfoList"가 "DIG_POFF_STTS"인 딕셔너리만 필터링
+# # filtered_list = [entry for entry in result_data 
+# #                  if "statusInfoList" in entry and any(status.get("id") == "DIG_POFF_STTS" for status in entry.get("statusInfoList", []))]
 
 
 # 데이터프레임 생성
-df = pd.json_normalize(filtered_list)
+df = pd.json_normalize(filtered_fault)
 
 # 'alarmStatusList'의 값들을 별도의 데이터프레임으로 만들기
 alarm_status_list= []
-for entry in result_data:
+for entry in filtered_fault:
     for alarm_status in entry.get('alarmStatusList', []):
         entry_dict = {
             'displayDisable': entry.get('displayDisable'),
@@ -123,7 +125,7 @@ alarm_status_df = pd.DataFrame(alarm_status_list)
 
 # 'statusInfoList'의 값들을 별도의 데이터프레임으로 만들기
 status_info_list = []
-for entry in result_data:
+for entry in filtered_fault:
     for status_info in entry.get('statusInfoList', []):
         entry_dict = {
             'displayDisable': entry.get('displayDisable'),
