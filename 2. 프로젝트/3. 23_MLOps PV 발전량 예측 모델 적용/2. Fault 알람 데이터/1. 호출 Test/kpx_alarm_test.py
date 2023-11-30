@@ -1,89 +1,95 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-#import requests
+import requests
 from requests_toolbelt import MultipartEncoder
 import pandas as pd
 from pytz import timezone
-#from azure.storage.blob import BlobServiceClient
+from azure.storage.blob import BlobServiceClient
 
 
-session = requests.Session()
+def login():
+    session = requests.Session()
 
-url_login = 'https://essonm.ls-electric.com/api/login'
-m = MultipartEncoder(fields = {'username': 'majin', 'password': '12345'}, encoding='utf-8')
-response_login = session.post(url_login, data=m, headers={'Content-Type': m.content_type})
+    url_login = 'https://essonm.ls-electric.com/api/login'
+    m = MultipartEncoder(fields = {'username': 'majin', 'password': '12345'}, encoding='utf-8')
+    response_login = session.post(url_login, data=m, headers={'Content-Type': m.content_type})
 
-response_login.raise_for_status()  # 오류 발생 시 예외 처리
+    response_login.raise_for_status()  # 오류 발생 시 예외 처리
+
+    return session
 
 
-## api 데이터 호출
-api_url = 'https://essonm.ls-electric.com/api/alarms'
+def request(session):
+    ## api 데이터 호출
+    api_url = 'https://essonm.ls-electric.com/api/alarms'
 
-# API 요청을 위한 데이터 - ESS(PCS)
-data = {
-    'deviceIds': [
-        "YA.ESS01.PCS01",
-        "YA.ESS01.PCS02",        
-        "YA.ESS01.PCS03",
-        "YA.ESS01.PCS04",
-        "YA.ESS01.PCS05",
-        "YA.ESS01.PCS06",        
-        "YA.ESS01.PCS07",
-        "YA.ESS01.PCS08",
-        "YA.ESS01.PCS09",
-        "YA.ESS01.PCS10",
-        "YA.ESS01.PCS11",
-        "YA.ESS01.PCS12",
-        "YA.ESS01.PCS13",
-        "YA.ESS01.PCS14",
-        "YA.ESS01.PCS15",
-        "YA.ESS01.PCS16",
-        "YA.ESS01.PCS17",
-        "YA.ESS01.PCS18",
-        "YA.ESS01.PCS19",
-        "YA.ESS01.PCS20",
-        "YA.ESS01.PCS21",
-        "YA.ESS01.PCS22",
-        "YA.ESS01.PCS23",
-        "YA.ESS01.PCS24",
-        "YA.ESS01.PCS25",
-        "YA.ESS01.PCS26",
-        "YA.ESS01.PCS27",
-        "YA.ESS01.PCS28",
-        "YA.ESS01.PCS29",
-        "YA.ESS01.PCS30",
-        "YA.ESS01.PCS31",
-        "YA.ESS01.PCS32",
-        "YA.ESS01.PCS33",
-        "YA.ESS01.PCS34",
-        "YA.ESS01.PCS35",
-        "YA.ESS01.PCS36",
-        "YA.ESS01.PCS37",
-        "YA.ESS01.PCS38",
-        "YA.ESS01.PCS39"
-    ],
-    'types': ['Fault'],
-    'unresolved': True,
-    #'startDate': '2023-08-29',
-    # 'endDate' : '2023-09-07',
-    'tagIds': ['DIG_FLT_STTS'],     #'DIG_POFF_STTS' -> type,unresolved 삭제
-    "pageNumber" : 1,
-    "countPerPage" : 1
-}
+    # API 요청을 위한 데이터 - ESS(PCS)
+    data = {
+        'deviceIds': [
+            "YA.ESS01.PCS01",
+            "YA.ESS01.PCS02",        
+            "YA.ESS01.PCS03",
+            "YA.ESS01.PCS04",
+            "YA.ESS01.PCS05",
+            "YA.ESS01.PCS06",        
+            "YA.ESS01.PCS07",
+            "YA.ESS01.PCS08",
+            "YA.ESS01.PCS09",
+            "YA.ESS01.PCS10",
+            "YA.ESS01.PCS11",
+            "YA.ESS01.PCS12",
+            "YA.ESS01.PCS13",
+            "YA.ESS01.PCS14",
+            "YA.ESS01.PCS15",
+            "YA.ESS01.PCS16",
+            "YA.ESS01.PCS17",
+            "YA.ESS01.PCS18",
+            "YA.ESS01.PCS19",
+            "YA.ESS01.PCS20",
+            "YA.ESS01.PCS21",
+            "YA.ESS01.PCS22",
+            "YA.ESS01.PCS23",
+            "YA.ESS01.PCS24",
+            "YA.ESS01.PCS25",
+            "YA.ESS01.PCS26",
+            "YA.ESS01.PCS27",
+            "YA.ESS01.PCS28",
+            "YA.ESS01.PCS29",
+            "YA.ESS01.PCS30",
+            "YA.ESS01.PCS31",
+            "YA.ESS01.PCS32",
+            "YA.ESS01.PCS33",
+            "YA.ESS01.PCS34",
+            "YA.ESS01.PCS35",
+            "YA.ESS01.PCS36",
+            "YA.ESS01.PCS37",
+            "YA.ESS01.PCS38",
+            "YA.ESS01.PCS39"
+        ],
+        'types': ['Fault'],
+        'unresolved': True,
+        'tagIds': ['DIG_FLT_STTS'],     #'DIG_POFF_STTS' -> type,unresolved 삭제
+        "pageNumber" : 1,
+        "countPerPage" : 1
+    }
 
-# 요청 보내기
-response = session.post(api_url, json=data, headers={'Content-Type': 'application/json'})
+    # 요청 보내기
+    response = session.post(api_url, json=data, headers={'Content-Type': 'application/json'})
 
-try:
-    response.raise_for_status()
-except requests.exceptions.HTTPError as errh:
-    print(f'HTTP 오류 발생: {errh}')
-except requests.exceptions.RequestException as err:
-    print(f'요청 오류: {err}')
+    try:
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as errh:
+        print(f'HTTP 오류 발생: {errh}')
+    except requests.exceptions.RequestException as err:
+        print(f'요청 오류: {err}')
 
-# JSON 응답 문자열을 파이썬 객체로 변환
-result_data = response.json()
+    # JSON 응답 문자열을 파이썬 객체로 변환
+    result_data = response.json()
+
+
+
+
 
 
 # "alarmMessageId": "DIG_FLT_STTS+0"가 포함된 딕셔너리만 남기기
